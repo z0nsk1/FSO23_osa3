@@ -1,6 +1,8 @@
 const express = require('express')
 const app = express() // käytetään http:tä parempaa kirjastoa, eli expressiä
 
+app.use(express.json())
+
 // kovakoodattu data sivulle
 let persons = [
     {
@@ -48,6 +50,37 @@ app.get('/api/persons/:id', (req, res) => {
 // Haetaan sivuston infosivu, info määritelty ylempänä
 app.get('/info', (req, res) => {
     res.send(info)
+})
+
+// Uuden henkilön lisäys post-metodila
+app.post('/api/persons', (req, res) => {
+    const body = req.body
+    const p = persons.find(person => person.name === body.name) // taulukko henkilö(istä), jolla on sama nimi lisätyn kanssa
+    if (!body.name || !body.number) { // jos name tai number -kenttä ovat tyhjiä, annetaan virheilmoitus
+        return res.status(400).json({
+            error: 'Missing name or number'
+        })
+    } else if (p) { // jos p ei ole tyhjä, eli löytyi samanniminen henkilö, annetaan virheilmoitus
+        return res.status(400).json({ 
+            error: 'Name must be unique'
+        })
+    }
+    
+    const person = { // Asetetaan uuden henkilön tiedot
+        name: body.name,
+        number: body.number,
+        id: Math.floor(Math.random() * 100), // id random-metodilla (tehtävänanto)
+    }
+
+    persons = persons.concat(person) // liitetään uusi henkilö henkilötaulukkoon
+    res.json(person) // lähetetään json-vastaus
+})
+
+app.delete('/api/persons/:id', (req, res) => {
+    const id = Number(req.params.id)
+    persons = persons.filter(person => person.id !== id)
+
+    res.status(204).end()
 })
 
 // Avataan serveri porttiin 3001
