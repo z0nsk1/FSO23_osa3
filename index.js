@@ -2,8 +2,14 @@ const express = require('express')
 const morgan = require('morgan')
 const app = express() // käytetään http:tä parempaa kirjastoa, eli expressiä
 
+// Luodaan morganille uusi tokeni, jolla saadaan http requestin sisältö logattua
+morgan.token('content', function getContent (req) {
+    return JSON.stringify(req.body)
+})
+
 app.use(express.json())
-app.use(morgan('tiny'))
+// logataan http-requestien tiedot, mukana nyt myös itse lisätty tokeni "content"
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :content'))
 
 // kovakoodattu data sivulle
 let persons = [
