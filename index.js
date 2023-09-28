@@ -1,7 +1,9 @@
 const express = require('express')
+const morgan = require('morgan')
 const app = express() // käytetään http:tä parempaa kirjastoa, eli expressiä
 
 app.use(express.json())
+app.use(morgan('tiny'))
 
 // kovakoodattu data sivulle
 let persons = [
