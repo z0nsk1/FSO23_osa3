@@ -1,5 +1,6 @@
 const express = require('express')
 const morgan = require('morgan')
+const cors = require('cors')
 const app = express() // käytetään http:tä parempaa kirjastoa, eli expressiä
 
 // Luodaan morganille uusi tokeni, jolla saadaan http requestin sisältö logattua
@@ -10,6 +11,7 @@ morgan.token('content', function getContent (req) {
 app.use(express.json())
 // logataan http-requestien tiedot, mukana nyt myös itse lisätty tokeni "content"
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :content'))
+app.use(cors())
 
 // kovakoodattu data sivulle
 let persons = [
@@ -92,7 +94,7 @@ app.delete('/api/persons/:id', (req, res) => {
 })
 
 // Avataan serveri porttiin 3001
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
