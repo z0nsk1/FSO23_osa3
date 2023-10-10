@@ -5,14 +5,15 @@ const cors = require('cors')
 require('dotenv').config()
 
 const Person  = require('./models/person')
+const { mongo } = require('mongoose')
 
 // Luodaan morganille uusi tokeni, jolla saadaan http requestin sisältö logattua
 morgan.token('content', function getContent (req) {
     return JSON.stringify(req.body)
 })
 
-app.use(express.json())
 app.use(express.static('build'))
+app.use(express.json())
 // logataan http-requestien tiedot, mukana nyt myös itse lisätty tokeni "content"
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :content'))
 app.use(cors())
@@ -42,33 +43,37 @@ let persons = [
     }
 ]*/
 
-//let info = `Phonebook has info for ${persons.length} people <br> 
-  //          ${new Date()}` 
-
 // Haetaan listaus kaikista henkilöistä
-app.get('/api/persons', (req, res) => {
+app.get('/api/persons', (req, res, next) => {
     Person.find({}).then(persons => {
         res.json(persons)
     })
+    .catch(error => next(error))
 })
 
 // Haetaan listaus yksittäisistä henkilöistä id:n perusteella
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
     Person.findById(req.params.id).then(person => {
-        res.json(person)
+        if (person) {
+            res.json(person)
+        } else {
+            res.status(404).end()
+        }
+    })
+    .catch(error => next(error))
+})
+
+app.get('/info', (req, res) => {
+    Person.find({}).then(persons => {
+        res.send(`Phonebook has info for ${persons.length} people <br> ${new Date()}`)
     })
 })
 
-// Haetaan sivuston infosivu, info määritelty ylempänä
-app.get('/info', (req, res) => {
-    res.send(info)
-})
-
 // Uuden henkilön lisäys post-metodila
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body
     //const p = persons.find(person => person.name === body.name) // taulukko henkilö(istä), jolla on sama nimi lisätyn kanssa
-    if (!body.name === undefined || body.number === undefined) { // jos name tai number -kenttä ovat tyhjiä, annetaan virheilmoitus
+    if (!body.name || !body.number) { // jos name tai number -kenttä ovat tyhjiä, annetaan virheilmoitus
         return res.status(400).json({
             error: 'Missing name or number'
         })
@@ -81,22 +86,48 @@ app.post('/api/persons', (req, res) => {
     const person = new Person({ // Asetetaan uuden henkilön tiedot
         name: body.name,
         number: body.number,
-        //id: Math.floor(Math.random() * 100), // id random-metodilla (tehtävänanto)
 })
 
     person.save().then(savedPerson => {
         res.json(savedPerson) // lähetetään json-vastaus
     })
+    .catch(error => next(error))
 })
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(person => person.id !== id)
-
-    res.status(204).end()
+    Person.findByIdAndDelete(req.params.id).then(result => {
+        res.status(204).end()
+    })
 })
 
-const PORT = process.env.PORT
+// Numeron päivittäminen
+app.put('/api/persons/:id', (req, res, next) => {
+    const body = req.body
+  
+    const person = {
+      name: body.name,
+      number: body.number,
+    }
+    Person.findByIdAndUpdate(req.params.id, person, { new: true })
+      .then(updatedPerson => {
+        res.json(updatedPerson)
+      })
+      .catch(error => next(error))
+  })
+
+const errorHandler = (error, request, response, next) => {
+    console.log(error.message)
+    console.log(error.name)
+
+    if(error.name === 'CastError') {
+        return response.status(400).send({error: 'Malformatted id'})
+    }
+    next(error)
+}
+
+app.use(errorHandler)
+
+const PORT = process.env.PORT // portti saadaan ympäristömuuttujasta, joka on env-tiedostossa
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
