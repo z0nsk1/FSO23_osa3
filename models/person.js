@@ -14,8 +14,21 @@ mongoose.connect(url).then(result => {
 
 // Luodaan uusi henkiloskeema, kertoo mongoosella, miten henkilo-olio tulee tallettaa tietokantaan
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: {
+    type: String,
+    minlength: 3,
+    required: [true, 'Name is required']
+  },
+  number: {
+    type: String,
+    required: [true, 'Phone number required'],
+    validate: {
+      validator: function(v) {
+        return /\d{3}-\d{5}|\d{2}-\d{6}/.test(v)
+      },
+      message: props => `${props.value} phone number is not valid`
+    }
+  },
 })
 
 personSchema.set('toJSON', {

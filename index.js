@@ -73,11 +73,11 @@ app.get('/info', (req, res) => {
 app.post('/api/persons', (req, res, next) => {
     const body = req.body
     //const p = persons.find(person => person.name === body.name) // taulukko henkilö(istä), jolla on sama nimi lisätyn kanssa
-    if (!body.name || !body.number) { // jos name tai number -kenttä ovat tyhjiä, annetaan virheilmoitus
+    /*if (!body.name || !body.number) { // jos name tai number -kenttä ovat tyhjiä, annetaan virheilmoitus
         return res.status(400).json({
             error: 'Missing name or number'
         })
-    } /*else if (p) { // jos p ei ole tyhjä, eli löytyi samanniminen henkilö, annetaan virheilmoitus
+    } else if (p) { // jos p ei ole tyhjä, eli löytyi samanniminen henkilö, annetaan virheilmoitus
         return res.status(400).json({ 
             error: 'Name must be unique'
         })
@@ -115,12 +115,14 @@ app.put('/api/persons/:id', (req, res, next) => {
       .catch(error => next(error))
   })
 
-const errorHandler = (error, request, response, next) => {
+const errorHandler = (error, req, res, next) => {
     console.log(error.message)
     console.log(error.name)
 
     if(error.name === 'CastError') {
-        return response.status(400).send({error: 'Malformatted id'})
+        return res.status(400).send({error: 'Malformatted id'})
+    } else if (error.name === 'ValidationError') {
+        return res.status(400).json({error: error.message})
     }
     next(error)
 }
